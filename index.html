@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Rust Multi-Player Demo</title>
+    <style>
+        canvas { border: 2px solid #333; background: #f0f0f0; }
+        body { display: flex; flex-direction: column; align-items: center; font-family: sans-serif; }
+    </style>
+</head>
+<body>
+    <h1>Rust + JS Multiplayer</h1>
+    <canvas id="gameCanvas" width="600" height="400"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const socket = new WebSocket('ws://127.0.0.1:8080');
+
+        let myId = Math.random().toString(36).substring(7);
+        let player = { id: myId, x: 50, y: 50, color: 'blue' };
+        let otherPlayers = {};
+
+        socket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            otherPlayers[data.id] = data;
+        };
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw me
+            ctx.fillStyle = player.color;
+            ctx.beginPath();
+            ctx.arc(player.x, player.y, 15, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Draw others
+            for (let id in otherPlayers) {
+                ctx.fillStyle = 'red';
+                ctx.beginPath();
+                ctx.arc(otherPlayers[id].x, otherPlayers[id].y, 15, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            requestAnimationFrame(draw);
+        }
+
+        window.addEventListener('keydown', (e) => {
+            const speed = 10;
+            if (e.key === 'ArrowUp') player.y -= speed;
+            if (e.key === 'ArrowDown') player.y += speed;
+            if (e.key === 'ArrowLeft') player.x -= speed;
+            if (e.key === 'ArrowRight') player.x += speed;
+
+            // Send movement to server
+            if (socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify(player));
+            }
+        });
+
+        draw();
+    </script>
+</body>
+</html>
