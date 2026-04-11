@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Rust Multi-Test</title>
+    <style>
+        body { margin: 0; background: #111; color: #eee; overflow: hidden; font-family: sans-serif; }
+        canvas { display: block; }
+        #ui { position: absolute; top: 20px; left: 20px; pointer-events: none; }
+    </style>
+</head>
+<body>
+    <div id="ui">
+        <h2>Rust Multiplayer Engine</h2>
+        <div id="status">Connecting...</div>
+    </div>
+    <canvas id="canvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const status = document.getElementById('status');
+        
+        let players = {};
+        const ws = new WebSocket(`ws://${window.location.host}/ws`);
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        ws.onopen = () => status.innerText = "Connected";
+        ws.onmessage = (e) => {
+            const data = JSON.parse(e.data);
+            players['local'] = data; // Simple echo for testing
+        };
+
+        window.onmousemove = (e) => {
+            if (ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ x: e.clientX, y: e.clientY }));
+            }
+        };
+
+        function loop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            for (let id in players) {
+                ctx.fillStyle = '#00ffcc';
+                ctx.beginPath();
+                ctx.arc(players[id].x, players[id].y, 10, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            requestAnimationFrame(loop);
+        }
+        loop();
+    </script>
+</body>
+</html>
