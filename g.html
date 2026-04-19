@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pro ASCII Art & Video Engine</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&display=swap');
+        
+        body {
+            background-color: #0f172a;
+            color: #e2e8f0;
+            font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+        }
+
+        #ascii-output {
+            font-family: 'Fira Code', monospace;
+            line-height: 1;
+            white-space: pre;
+            cursor: text;
+            background: #000;
+            letter-spacing: 0px;
+            display: inline-block;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+
+        /* Accent Pulse for active video */
+        .is-playing {
+            box-shadow: 0 0 15px rgba(52, 211, 153, 0.3);
+            border-color: #10b981 !important;
+        }
+
+        .loading-shimmer {
+            background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8">
+    <div class="max-w-6xl mx-auto">
+        <header class="mb-8 text-center">
+            <h1 class="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">
+                ASCII Media Engine
+            </h1>
+            <p class="text-slate-400 mt-2">Convert images and live video into real-time text animation.</p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <!-- Sidebar Controls -->
+            <div class="lg:col-span-1 space-y-6 bg-slate-800/50 p-6 rounded-2xl border border-slate-700 backdrop-blur-sm">
+                
+                <!-- Mode Toggle -->
+                <div class="flex p-1 bg-slate-900 rounded-xl">
+                    <button id="modeImage" class="flex-1 py-2 text-xs font-bold rounded-lg bg-blue-500 text-white transition-all">IMAGE</button>
+                    <button id="modeVideo" class="flex-1 py-2 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition-all">VIDEO</button>
+                </div>
+
+                <div id="imageInputGroup">
+                    <label class="block text-sm font-medium mb-2 text-blue-300">Upload/Link Image</label>
+                    <input type="text" id="imageUrl" placeholder="Paste image URL..." class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-white mb-2 outline-none focus:ring-1 focus:ring-blue-500">
+                    <input type="file" id="imageInput" accept="image/*" class="block w-full text-[10px] text-slate-400 file:mr-2 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-xs file:bg-blue-500 file:text-white hover:file:bg-blue-600 cursor-pointer">
+                </div>
+
+                <div id="videoInputGroup" class="hidden space-y-3">
+                    <div>
+                        <label class="block text-sm font-medium mb-2 text-emerald-300">Video Link / File</label>
+                        <input type="text" id="videoUrl" placeholder="Paste direct .mp4 link..." class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-white mb-2 outline-none focus:ring-1 focus:ring-emerald-500">
+                        <input type="file" id="videoFileInput" accept="video/*" class="block w-full text-[10px] text-slate-400 file:mr-2 file:py-1 file:px-3 file:rounded-full file:border-0 file:bg-emerald-600 file:text-white cursor-pointer">
+                    </div>
+                    <button id="playPauseBtn" class="w-full py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-bold transition-colors">Play / Pause</button>
+                </div>
+
+                <hr class="border-slate-700">
+
+                <div>
+                    <label class="flex justify-between text-sm font-medium mb-2">
+                        <span>Resolution</span>
+                        <span id="resVal" class="text-blue-400">80</span>
+                    </label>
+                    <input type="range" id="resolution" min="20" max="200" value="80" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer">
+                </div>
+
+                <div>
+                    <label class="flex justify-between text-sm font-medium mb-2">
+                        <span>Vertical Scale</span>
+                        <span id="lineHeightVal" class="text-blue-400">0.50</span>
+                    </label>
+                    <input type="range" id="lineHeight" min="0.3" max="1" step="0.05" value="0.50" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium mb-2">Character Set</label>
+                    <select id="charSet" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                        <option value=" .-~=;*<?(]IV#%@╬">Classic</option>
+                        <option value=" .:-=+*#%@">Standard</option>
+                        <option value=" ░▒▓█">Blocks</option>
+                        <option value="01">Binary</option>
+                        <option value=" █◘◙▲►♦#%@?wv]I{)=\\<|^\"*=;+-.` ">Extended</option>
+                    </select>
+                </div>
+
+                <button id="copyBtn" class="w-full py-3 bg-blue-600 hover:bg-blue-500 transition-colors rounded-xl font-bold flex items-center justify-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                    Copy Frame
+                </button>
+
+                <div class="space-y-2 pt-4 border-t border-slate-700">
+                    <label class="block text-xs font-medium mb-1 text-purple-300">Share Entire Generator State</label>
+                    <button id="shareLinkBtn" class="w-full py-2 bg-indigo-600 hover:bg-indigo-500 transition-colors rounded-lg font-bold text-xs text-white">Copy Shareable ?data= URL</button>
+                    <button id="exportHtmlBtn" class="w-full py-2 bg-slate-700/50 hover:bg-slate-600 transition-colors rounded-lg font-bold text-xs text-slate-300">Copy HTML Embed Code</button>
+                </div>
+                
+                <div id="status" class="hidden text-center py-2 bg-slate-900 rounded-lg text-xs font-mono text-emerald-400">
+                    Copied to Clipboard!
+                </div>
+            </div>
+
+            <!-- Main Preview Area -->
+            <div class="lg:col-span-3 space-y-4">
+                <div id="canvasContainer" class="bg-slate-900 rounded-2xl border border-slate-700 overflow-hidden shadow-2xl flex flex-col h-[70vh] transition-all">
+                    <div class="flex items-center justify-between px-4 py-2 bg-slate-800 border-b border-slate-700">
+                        <span id="engineLabel" class="text-xs font-mono text-slate-400 uppercase tracking-widest text-blue-400">Image Mode</span>
+                        <div class="flex gap-1.5">
+                            <div class="w-3 h-3 rounded-full bg-red-500/20"></div>
+                            <div class="w-3 h-3 rounded-full bg-yellow-500/20"></div>
+                            <div class="w-3 h-3 rounded-full bg-green-500/20"></div>
+                        </div>
+                    </div>
+                    <div class="flex-grow overflow-auto p-4 custom-scrollbar bg-black flex justify-center items-start">
+                        <div id="ascii-output">Waiting for media...</div>
+                    </div>
+                </div>
+                
+                <div class="flex flex-wrap gap-4 items-center justify-between text-slate-500 text-sm">
+                    <div id="dimensions" class="font-mono italic">Ready</div>
+                    <div class="flex items-center gap-4">
+                        <video id="hiddenVideo" class="hidden" loop muted crossorigin="anonymous" playsinline></video>
+                        <canvas id="hiddenCanvas" class="hidden"></canvas>
+                        <span id="fpsCounter" class="hidden font-mono text-emerald-500">Live</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const imageInput = document.getElementById('imageInput');
+        const imageUrlInput = document.getElementById('imageUrl');
+        const videoFileInput = document.getElementById('videoFileInput');
+        const videoUrlInput = document.getElementById('videoUrl');
+        const resInput = document.getElementById('resolution');
+        const lhInput = document.getElementById('lineHeight');
+        const charSetSelect = document.getElementById('charSet');
+        const asciiOutput = document.getElementById('ascii-output');
+        const hiddenCanvas = document.getElementById('hiddenCanvas');
+        const hiddenVideo = document.getElementById('hiddenVideo');
+        const resVal = document.getElementById('resVal');
+        const lhVal = document.getElementById('lineHeightVal');
+        const ctx = hiddenCanvas.getContext('2d', { willReadFrequently: true });
+        
+        const modeImage = document.getElementById('modeImage');
+        const modeVideo = document.getElementById('modeVideo');
+        const imageGroup = document.getElementById('imageInputGroup');
+        const videoGroup = document.getElementById('videoInputGroup');
+        const engineLabel = document.getElementById('engineLabel');
+        const canvasContainer = document.getElementById('canvasContainer');
+        const fpsCounter = document.getElementById('fpsCounter');
+
+        let originalImage = null;
+        let isVideoMode = false;
+        let animationId = null;
+        let currentFileBase64 = null; // Stores Base64 for local uploads
+
+        // Video Error Handling
+        hiddenVideo.onerror = (e) => {
+            console.error("Video Error:", e);
+            asciiOutput.textContent = "Error: Video source not supported or blocked by CORS.\nTry a direct MP4 link or upload a file.";
+            asciiOutput.classList.add('text-red-400');
+            stopVideo();
+        };
+
+        // Switch Modes
+        modeImage.onclick = () => {
+            isVideoMode = false;
+            stopVideo();
+            modeImage.className = "flex-1 py-2 text-xs font-bold rounded-lg bg-blue-500 text-white transition-all";
+            modeVideo.className = "flex-1 py-2 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition-all";
+            imageGroup.classList.remove('hidden');
+            videoGroup.classList.add('hidden');
+            engineLabel.textContent = "Image Mode";
+            engineLabel.className = "text-xs font-mono uppercase tracking-widest text-blue-400";
+            fpsCounter.classList.add('hidden');
+            asciiOutput.classList.remove('text-red-400');
+            if(originalImage) processFrame(originalImage);
+        };
+
+        modeVideo.onclick = () => {
+            isVideoMode = true;
+            modeVideo.className = "flex-1 py-2 text-xs font-bold rounded-lg bg-emerald-500 text-white transition-all";
+            modeImage.className = "flex-1 py-2 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition-all";
+            videoGroup.classList.remove('hidden');
+            imageGroup.classList.add('hidden');
+            engineLabel.textContent = "Video Mode";
+            engineLabel.className = "text-xs font-mono uppercase tracking-widest text-emerald-400";
+            fpsCounter.classList.remove('hidden');
+            asciiOutput.classList.remove('text-red-400');
+        };
+
+        // Load image from URL
+        imageUrlInput.onchange = () => {
+            if (imageUrlInput.value) {
+                currentFileBase64 = null;
+                const img = new Image();
+                img.crossOrigin = "anonymous";
+                img.onload = () => {
+                    originalImage = img;
+                    processFrame(img);
+                };
+                img.onerror = () => {
+                    asciiOutput.textContent = "Error: Image URL blocked by CORS or invalid.";
+                    asciiOutput.classList.add('text-red-400');
+                };
+                img.src = imageUrlInput.value;
+            }
+        };
+
+        // Load image from file
+        imageInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                currentFileBase64 = event.target.result;
+                const img = new Image();
+                img.onload = () => {
+                    originalImage = img;
+                    processFrame(img);
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // Video Link
+        videoUrlInput.onchange = () => {
+            if (videoUrlInput.value) {
+                currentFileBase64 = null;
+                asciiOutput.textContent = "Loading video stream...";
+                asciiOutput.classList.remove('text-red-400');
+                hiddenVideo.src = videoUrlInput.value;
+                hiddenVideo.load();
+                hiddenVideo.play().then(() => {
+                    startVideoLoop();
+                }).catch(err => {
+                    console.warn("Play blocked:", err);
+                    asciiOutput.textContent = "Video loaded. Press Play to start.";
+                });
+            }
+        };
+
+        // Video File
+        videoFileInput.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                asciiOutput.classList.remove('text-red-400');
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    currentFileBase64 = ev.target.result;
+                    hiddenVideo.src = ev.target.result;
+                    hiddenVideo.play().then(() => startVideoLoop());
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+
+        document.getElementById('playPauseBtn').onclick = () => {
+            if (hiddenVideo.paused) {
+                hiddenVideo.play().then(() => startVideoLoop());
+            } else {
+                hiddenVideo.pause();
+            }
+        };
+
+        function startVideoLoop() {
+            if (animationId) cancelAnimationFrame(animationId);
+            canvasContainer.classList.add('is-playing');
+            
+            function step() {
+                if (isVideoMode && !hiddenVideo.paused && !hiddenVideo.ended) {
+                    processFrame(hiddenVideo);
+                    animationId = requestAnimationFrame(step);
+                } else if (isVideoMode && !hiddenVideo.paused) {
+                    animationId = requestAnimationFrame(step);
+                }
+            }
+            animationId = requestAnimationFrame(step);
+        }
+
+        function stopVideo() {
+            hiddenVideo.pause();
+            canvasContainer.classList.remove('is-playing');
+            if (animationId) cancelAnimationFrame(animationId);
+        }
+
+        function processFrame(source) {
+            const alphabet = charSetSelect.value;
+            const res = parseInt(resInput.value);
+            const lineHtScale = parseFloat(lhInput.value);
+
+            const sW = source.videoWidth || source.width || 0;
+            const sH = source.videoHeight || source.height || 0;
+            
+            if (sW === 0 || sH === 0) return;
+
+            const width = res;
+            const height = Math.floor(res * (sH / sW) * lineHtScale);
+
+            if (hiddenCanvas.width !== width || hiddenCanvas.height !== height) {
+                hiddenCanvas.width = width;
+                hiddenCanvas.height = height;
+            }
+            
+            ctx.drawImage(source, 0, 0, width, height);
+            const imageData = ctx.getImageData(0, 0, width, height).data;
+            let asciiStr = "";
+
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const idx = (y * width + x) * 4;
+                    const r = imageData[idx];
+                    const g = imageData[idx + 1];
+                    const b = imageData[idx + 2];
+                    const brightness = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+                    const charIndex = Math.floor(brightness * (alphabet.length - 1));
+                    asciiStr += alphabet[charIndex] || alphabet[alphabet.length - 1];
+                }
+                asciiStr += "\n";
+            }
+
+            asciiOutput.textContent = asciiStr;
+            document.getElementById('dimensions').textContent = `${width} x ${height}`;
+            
+            if (width > 150) asciiOutput.style.fontSize = '4px';
+            else if (width > 100) asciiOutput.style.fontSize = '6px';
+            else if (width > 60) asciiOutput.style.fontSize = '9px';
+            else asciiOutput.style.fontSize = '12px';
+        }
+
+        [resInput, lhInput, charSetSelect].forEach(input => {
+            input.addEventListener('input', () => {
+                resVal.textContent = resInput.value;
+                lhVal.textContent = lhInput.value;
+                if (!isVideoMode && originalImage) processFrame(originalImage);
+            });
+        });
+
+        // REUSABLE COPY
+        function copyToClipboard(text, successMessage) {
+            const dummy = document.createElement("textarea");
+            document.body.appendChild(dummy);
+            dummy.value = text;
+            dummy.select();
+            document.execCommand("copy");
+            document.body.removeChild(dummy);
+
+            const status = document.getElementById('status');
+            status.textContent = successMessage;
+            status.classList.remove('hidden');
+            setTimeout(() => status.classList.add('hidden'), 2500);
+        }
+
+        // SHAREABLE LINK GENERATOR (?data=)
+        document.getElementById('shareLinkBtn').onclick = () => {
+            const status = document.getElementById('status');
+            status.textContent = "Encoding state...";
+            status.classList.remove('hidden');
+
+            // Source is either the typed URL or the embedded local file
+            const mediaSource = isVideoMode ? (videoUrlInput.value || currentFileBase64) : (imageUrlInput.value || currentFileBase64);
+
+            if (!mediaSource) {
+                status.textContent = "Error: No media to share!";
+                setTimeout(() => status.classList.add('hidden'), 2000);
+                return;
+            }
+
+            const config = {
+                v: isVideoMode ? 1 : 0,
+                r: resInput.value,
+                l: lhInput.value,
+                c: charSetSelect.selectedIndex,
+                src: mediaSource
+            };
+            
+            try {
+                const jsonString = JSON.stringify(config);
+                // Using a more robust encoding for large strings (like base64 files)
+                const encodedData = btoa(unescape(encodeURIComponent(jsonString)));
+                
+                const baseUrl = window.location.href.split('?')[0];
+                const shareUrl = `${baseUrl}?data=${encodedData}`;
+                
+                copyToClipboard(shareUrl, "Generator Link Copied! (All settings saved)");
+            } catch (err) {
+                console.error(err);
+                status.textContent = "Error: Data too large for URL!";
+            }
+        };
+
+        // HTML EMBED CODE
+        document.getElementById('exportHtmlBtn').addEventListener('click', () => {
+            const text = asciiOutput.textContent;
+            const html = `<!DOCTYPE html><html><body style="background:#000;color:#fff;font-family:monospace;white-space:pre;line-height:1;font-size:10px;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;">${text}</body></html>`;
+            const dataUrl = 'data:text/html;charset=utf-8,' + encodeURIComponent(html);
+            const embedCode = `<iframe src="${dataUrl}" width="600" height="400" frameborder="0"></iframe>`;
+            copyToClipboard(embedCode, "Embed Code Copied!");
+        });
+
+        document.getElementById('copyBtn').onclick = () => copyToClipboard(asciiOutput.textContent, "ASCII Copied!");
+
+        // ON LOAD: Check for ?data= and reconstruct
+        window.onload = () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const data = urlParams.get('data');
+            
+            if (data) {
+                try {
+                    const decodedData = decodeURIComponent(escape(atob(data)));
+                    const config = JSON.parse(decodedData);
+                    
+                    // Apply config settings
+                    resInput.value = config.r;
+                    resVal.textContent = config.r;
+                    lhInput.value = config.l;
+                    lhVal.textContent = config.l;
+                    charSetSelect.selectedIndex = config.c;
+                    
+                    const source = config.src;
+
+                    if (config.v === 1) {
+                        modeVideo.click();
+                        // If it's a Data URL, we treat it like a file upload, else it's a URL
+                        if (source.startsWith('data:')) {
+                            currentFileBase64 = source;
+                            hiddenVideo.src = source;
+                            hiddenVideo.play().then(() => startVideoLoop());
+                        } else {
+                            videoUrlInput.value = source;
+                            videoUrlInput.onchange();
+                        }
+                    } else {
+                        modeImage.click();
+                        if (source.startsWith('data:')) {
+                            currentFileBase64 = source;
+                            const img = new Image();
+                            img.onload = () => {
+                                originalImage = img;
+                                processFrame(img);
+                            };
+                            img.src = source;
+                        } else {
+                            imageUrlInput.value = source;
+                            imageUrlInput.onchange();
+                        }
+                    }
+                } catch (e) {
+                    console.error("Failed to parse link data", e);
+                }
+            }
+        };
+    </script>
+</body>
+</html>
