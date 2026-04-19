@@ -12,6 +12,8 @@
             background-color: #0f172a;
             color: #e2e8f0;
             font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+            margin: 0;
+            padding: 0;
         }
 
         #ascii-output {
@@ -22,117 +24,153 @@
             background: #000;
             letter-spacing: 0px;
             display: inline-block;
+            transform-origin: top left;
+            will-change: contents; /* GPU hint for frequent text updates */
         }
 
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: #1e293b;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #475569;
-            border-radius: 4px;
-        }
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #1e293b; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
 
         .is-playing {
-            box-shadow: 0 0 15px rgba(52, 211, 153, 0.3);
+            box-shadow: 0 0 25px rgba(16, 185, 129, 0.2);
             border-color: #10b981 !important;
+        }
+
+        /* View Mode specific styling */
+        body.view-mode { background-color: #000; }
+        body.view-mode #main-ui { display: none; }
+        body.view-mode #canvasContainer {
+            width: 100vw;
+            height: 100vh;
+            border: none;
+            border-radius: 0;
         }
     </style>
 </head>
-<body class="min-h-screen p-4 md:p-8">
-    <div class="max-w-6xl mx-auto">
+<body class="min-h-screen">
+    <!-- UI LAYOUT -->
+    <div id="main-ui" class="p-4 md:p-8 max-w-7xl mx-auto">
         <header class="mb-8 text-center">
-            <h1 class="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">
-                ASCII Media Engine
+            <h1 class="text-5xl font-black bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-emerald-400">
+                ASCII ULTRA ENGINE
             </h1>
-            <p class="text-slate-400 mt-2">Convert images and live video into real-time text animation.</p>
+            <p class="text-slate-400 mt-2">Professional Grade Media-to-Text Transcoder</p>
         </header>
 
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            <div class="lg:col-span-1 space-y-6 bg-slate-800/50 p-6 rounded-2xl border border-slate-700 backdrop-blur-sm">
+            <div class="lg:col-span-1 space-y-6 bg-slate-800/80 p-6 rounded-3xl border border-slate-700 backdrop-blur-xl shadow-xl">
                 
-                <div class="flex p-1 bg-slate-900 rounded-xl">
-                    <button id="modeImage" class="flex-1 py-2 text-xs font-bold rounded-lg bg-blue-500 text-white transition-all">IMAGE</button>
+                <div class="flex p-1 bg-slate-900 rounded-2xl">
+                    <button id="modeImage" class="flex-1 py-2 text-xs font-bold rounded-xl bg-blue-500 text-white transition-all">IMAGE</button>
                     <button id="modeVideo" class="flex-1 py-2 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition-all">VIDEO</button>
                 </div>
 
-                <div id="imageInputGroup">
-                    <label class="block text-sm font-medium mb-2 text-blue-300">Upload Image</label>
-                    <input type="file" id="imageInput" accept="image/*" class="block w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-500 file:text-white hover:file:bg-blue-600 cursor-pointer">
+                <div id="imageInputGroup" class="space-y-3">
+                    <label class="block text-sm font-semibold text-blue-300">Input Source</label>
+                    <input type="text" id="imageUrl" placeholder="Paste image URL..." class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white outline-none focus:ring-2 focus:ring-blue-500">
+                    <div class="relative group">
+                        <input type="file" id="imageInput" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                        <div class="bg-slate-700 group-hover:bg-slate-600 p-3 rounded-xl text-center text-xs font-bold transition-colors">UPLOAD FILE</div>
+                    </div>
                 </div>
 
                 <div id="videoInputGroup" class="hidden space-y-3">
-                    <div>
-                        <label class="block text-sm font-medium mb-2 text-emerald-300">Video Link / File</label>
-                        <input type="text" id="videoUrl" placeholder="Paste direct .mp4 link..." class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-white mb-2 outline-none focus:ring-1 focus:ring-emerald-500">
-                        <input type="file" id="videoFileInput" accept="video/*" class="block w-full text-xs text-slate-400 file:mr-3 file:py-1 file:px-3 file:rounded-full file:border-0 file:bg-emerald-600 file:text-white cursor-pointer">
-                        <p class="text-[10px] text-slate-500 mt-2 italic">*Use links for embed sharing.</p>
+                    <label class="block text-sm font-semibold text-emerald-300">Video Source</label>
+                    <input type="text" id="videoUrl" placeholder="Paste .mp4 link..." class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white outline-none">
+                    <div class="relative group">
+                        <input type="file" id="videoFileInput" accept="video/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                        <div class="bg-slate-700 group-hover:bg-slate-600 p-3 rounded-xl text-center text-xs font-bold">UPLOAD VIDEO</div>
                     </div>
-                    <button id="playPauseBtn" class="w-full py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-bold transition-colors">Play / Pause</button>
+                    <button id="playPauseBtn" class="w-full py-3 bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded-xl text-sm font-black transition-all">PLAY / PAUSE</button>
                 </div>
 
                 <hr class="border-slate-700">
 
-                <div>
-                    <label class="flex justify-between text-sm font-medium mb-2">
-                        <span>Resolution</span>
-                        <span id="resVal" class="text-blue-400">80</span>
-                    </label>
-                    <input type="range" id="resolution" min="20" max="200" value="80" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer">
+                <div class="space-y-4">
+                    <div>
+                        <label class="flex justify-between text-sm font-bold mb-2">
+                            <span>Resolution (Width)</span>
+                            <span id="resVal" class="text-blue-400">120</span>
+                        </label>
+                        <input type="range" id="resolution" min="20" max="600" value="120" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500">
+                    </div>
+
+                    <div>
+                        <label class="flex justify-between text-sm font-bold mb-2">
+                            <span>Character Depth</span>
+                            <span id="lineHeightVal" class="text-blue-400">0.50</span>
+                        </label>
+                        <input type="range" id="lineHeight" min="0.2" max="1" step="0.01" value="0.50" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-purple-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold mb-2">Visual Palette</label>
+                        <select id="charSet" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm">
+                            <option value=" .:-=+*#%@">Standard (Detailed)</option>
+                            <option value=" .-~=;*<?(]IV#%@╬">Extended Pro</option>
+                            <option value=" ░▒▓█">Block Gradients</option>
+                            <option value="01">Binary Matrix</option>
+                            <option value=" .">Minimal Dots</option>
+                        </select>
+                    </div>
                 </div>
 
-                <div>
-                    <label class="flex justify-between text-sm font-medium mb-2">
-                        <span>Vertical Scale</span>
-                        <span id="lineHeightVal" class="text-blue-400">0.50</span>
-                    </label>
-                    <input type="range" id="lineHeight" min="0.3" max="1" step="0.05" value="0.50" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer">
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium mb-2">Character Set</label>
-                    <select id="charSet" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-                        <option value=" .-~=;*<?(]IV#%@╬">Classic</option>
-                        <option value=" .:-=+*#%@">Standard</option>
-                        <option value=" ░▒▓█">Blocks</option>
-                        <option value="01">Binary</option>
-                        <option value=" █◘◙▲►♦#%@?wv]I{)=\\<|^\"*=;+-.` ">Extended</option>
-                    </select>
-                </div>
-
-                <div class="space-y-2 pt-4 border-t border-slate-700">
-                    <label class="block text-xs font-medium mb-1 text-purple-300">Share & Export</label>
-                    <button id="exportHtmlBtn" class="w-full py-2 bg-purple-900/40 hover:bg-purple-600 border border-purple-700/50 transition-colors rounded-lg font-bold text-xs text-purple-200">Copy Compressed Live Embed</button>
-                    <button id="copyBtn" class="w-full py-2 bg-blue-900/40 hover:bg-blue-600 border border-blue-700/50 transition-colors rounded-lg font-bold text-xs text-blue-200">Copy Current Frame</button>
-                </div>
-                
-                <div id="status" class="hidden text-center py-2 bg-slate-900 rounded-lg text-xs font-mono text-emerald-400">
-                    Copied!
+                <div class="pt-4 space-y-3">
+                    <button id="shareLinkBtn" class="w-full py-4 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 transition-all rounded-2xl font-black text-xs text-white shadow-lg">
+                        SHARE VIEWER-ONLY LINK
+                    </button>
+                    <div id="status" class="hidden text-center py-3 bg-slate-900 border border-slate-700 rounded-xl text-xs font-bold text-emerald-400 animate-pulse">
+                        LINK COPIED TO CLIPBOARD
+                    </div>
                 </div>
             </div>
 
-            <div class="lg:col-span-3 space-y-4">
-                <div id="canvasContainer" class="bg-slate-900 rounded-2xl border border-slate-700 overflow-hidden shadow-2xl flex flex-col h-[70vh] transition-all">
-                    <div class="flex items-center justify-between px-4 py-2 bg-slate-800 border-b border-slate-700">
-                        <span id="engineLabel" class="text-xs font-mono text-slate-400 uppercase tracking-widest text-blue-400">Image Mode</span>
+            <div class="lg:col-span-3 flex flex-col gap-4">
+                <div id="canvasContainer" class="bg-black rounded-[2rem] border-4 border-slate-800 overflow-hidden shadow-2xl flex flex-col h-[75vh] relative group">
+                    <div class="absolute top-4 left-4 z-20 flex items-center gap-3">
+                        <span id="engineLabel" class="px-3 py-1 bg-blue-500/20 backdrop-blur-md rounded-full text-[10px] font-black uppercase tracking-widest text-blue-400 border border-blue-500/30">
+                            IMAGE ENGINE 2.0
+                        </span>
                     </div>
-                    <div class="flex-grow overflow-auto p-4 custom-scrollbar bg-black flex justify-center items-start">
-                        <div id="ascii-output">Ready for input...</div>
+                    <div class="flex-grow overflow-auto p-8 custom-scrollbar bg-black flex justify-center items-start">
+                        <div id="ascii-output">UPLOAD MEDIA TO BEGIN...</div>
                     </div>
                 </div>
-                <div id="dimensions" class="text-right text-slate-500 text-xs font-mono">Dimensions: 0x0</div>
+                
+                <div class="flex items-center justify-between px-6 text-slate-500 text-xs font-mono uppercase tracking-widest">
+                    <div id="dimensions">Waiting for input</div>
+                    <div class="flex gap-4">
+                        <div id="perfCounter">Idle</div>
+                        <div id="fpsCounter" class="text-emerald-500"></div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
+    <!-- BACKGROUND PROCESSORS -->
     <video id="hiddenVideo" class="hidden" loop muted crossorigin="anonymous" playsinline></video>
     <canvas id="hiddenCanvas" class="hidden"></canvas>
 
     <script>
+        const Compressor = {
+            encode: (text) => {
+                const patterns = [['d_img', 'data:image/png;base64,'], ['d_jpg', 'data:image/jpeg;base64,'], ['d_vid', 'data:video/mp4;base64,'], ['v_url', 'https://'], ['c_set1', ' .:-=+*#%@'], ['c_set2', ' .-~=;*<?(]IV#%@╬']];
+                let res = text;
+                patterns.forEach(([k, v]) => res = res.split(v).join(`$${k}$`));
+                return res;
+            },
+            decode: (text) => {
+                const patterns = [['d_img', 'data:image/png;base64,'], ['d_jpg', 'data:image/jpeg;base64,'], ['d_vid', 'data:video/mp4;base64,'], ['v_url', 'https://'], ['c_set1', ' .:-=+*#%@'], ['c_set2', ' .-~=;*<?(]IV#%@╬']];
+                let res = text;
+                patterns.forEach(([k, v]) => res = res.split(`$${k}$`).join(v));
+                return res;
+            }
+        };
+
         const imageInput = document.getElementById('imageInput');
+        const imageUrlInput = document.getElementById('imageUrl');
         const videoFileInput = document.getElementById('videoFileInput');
         const videoUrlInput = document.getElementById('videoUrl');
         const resInput = document.getElementById('resolution');
@@ -141,80 +179,84 @@
         const asciiOutput = document.getElementById('ascii-output');
         const hiddenCanvas = document.getElementById('hiddenCanvas');
         const hiddenVideo = document.getElementById('hiddenVideo');
-        const resVal = document.getElementById('resVal');
-        const lhVal = document.getElementById('lineHeightVal');
-        const ctx = hiddenCanvas.getContext('2d', { willReadFrequently: true });
+        const resValLabel = document.getElementById('resVal');
+        const lhValLabel = document.getElementById('lineHeightVal');
+        const ctx = hiddenCanvas.getContext('2d', { willReadFrequently: true, alpha: false });
         
-        const modeImage = document.getElementById('modeImage');
-        const modeVideo = document.getElementById('modeVideo');
-        const imageGroup = document.getElementById('imageInputGroup');
-        const videoGroup = document.getElementById('videoInputGroup');
-        const engineLabel = document.getElementById('engineLabel');
-
         let originalImage = null;
         let isVideoMode = false;
         let animationId = null;
+        let currentFileBase64 = null;
+        let lastFrameTime = 0;
+        let cachedFontSize = 0;
 
-        modeImage.onclick = () => {
-            isVideoMode = false;
-            stopVideo();
-            modeImage.className = "flex-1 py-2 text-xs font-bold rounded-lg bg-blue-500 text-white";
-            modeVideo.className = "flex-1 py-2 text-xs font-bold rounded-lg text-slate-400";
-            imageGroup.classList.remove('hidden');
-            videoGroup.classList.add('hidden');
-            engineLabel.textContent = "Image Mode";
+        const updateUIAndProcess = () => {
+            resValLabel.textContent = resInput.value;
+            lhValLabel.textContent = lhInput.value;
+            cachedFontSize = 0; // Force recalculation
+            if (!isVideoMode && originalImage) processFrame(originalImage);
+        };
+
+        resInput.addEventListener('input', updateUIAndProcess);
+        lhInput.addEventListener('input', updateUIAndProcess);
+        charSetSelect.addEventListener('change', updateUIAndProcess);
+
+        document.getElementById('modeImage').onclick = () => {
+            isVideoMode = false; stopVideo();
+            document.getElementById('imageInputGroup').classList.remove('hidden');
+            document.getElementById('videoInputGroup').classList.add('hidden');
+            document.getElementById('engineLabel').textContent = "IMAGE ENGINE 2.0";
             if(originalImage) processFrame(originalImage);
         };
-
-        modeVideo.onclick = () => {
+        document.getElementById('modeVideo').onclick = () => {
             isVideoMode = true;
-            modeVideo.className = "flex-1 py-2 text-xs font-bold rounded-lg bg-emerald-500 text-white";
-            modeImage.className = "flex-1 py-2 text-xs font-bold rounded-lg text-slate-400";
-            videoGroup.classList.remove('hidden');
-            imageGroup.classList.add('hidden');
-            engineLabel.textContent = "Video Mode";
+            document.getElementById('videoInputGroup').classList.remove('hidden');
+            document.getElementById('imageInputGroup').classList.add('hidden');
+            document.getElementById('engineLabel').textContent = "VIDEO ENGINE 2.0";
         };
 
+        const handleImage = (src) => {
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            img.onload = () => { originalImage = img; processFrame(img); };
+            img.src = src;
+        };
+
+        const handleVideo = (src) => {
+            hiddenVideo.src = src;
+            hiddenVideo.load();
+            hiddenVideo.play().then(() => startVideoLoop());
+        };
+
+        imageUrlInput.onchange = () => { currentFileBase64 = null; handleImage(imageUrlInput.value); };
         imageInput.onchange = (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
             const reader = new FileReader();
-            reader.onload = (event) => {
-                const img = new Image();
-                img.onload = () => { originalImage = img; processFrame(img); };
-                img.src = event.target.result;
-            };
-            reader.readAsDataURL(file);
+            reader.onload = (ev) => { currentFileBase64 = ev.target.result; handleImage(ev.target.result); };
+            reader.readAsDataURL(e.target.files[0]);
         };
 
-        videoUrlInput.onchange = () => {
-            if (videoUrlInput.value) {
-                hiddenVideo.src = videoUrlInput.value;
-                hiddenVideo.play().then(startVideoLoop);
-            }
-        };
-
+        videoUrlInput.onchange = () => { currentFileBase64 = null; handleVideo(videoUrlInput.value); };
         videoFileInput.onchange = (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                hiddenVideo.src = URL.createObjectURL(file);
-                hiddenVideo.play().then(startVideoLoop);
-            }
+            const reader = new FileReader();
+            reader.onload = (ev) => { currentFileBase64 = ev.target.result; handleVideo(ev.target.result); };
+            reader.readAsDataURL(e.target.files[0]);
         };
 
-        document.getElementById('playPauseBtn').onclick = () => {
-            hiddenVideo.paused ? hiddenVideo.play() : hiddenVideo.pause();
-        };
+        document.getElementById('playPauseBtn').onclick = () => hiddenVideo.paused ? hiddenVideo.play() : hiddenVideo.pause();
 
         function startVideoLoop() {
             if (animationId) cancelAnimationFrame(animationId);
-            const step = () => {
-                if (isVideoMode && !hiddenVideo.paused) {
+            let lastVideoTime = -1;
+
+            const loop = (now) => {
+                // Optimization: Only process if the video has actually moved to a new frame
+                if (isVideoMode && !hiddenVideo.paused && hiddenVideo.currentTime !== lastVideoTime) {
+                    lastVideoTime = hiddenVideo.currentTime;
                     processFrame(hiddenVideo);
-                    animationId = requestAnimationFrame(step);
                 }
+                animationId = requestAnimationFrame(loop);
             };
-            animationId = requestAnimationFrame(step);
+            animationId = requestAnimationFrame(loop);
         }
 
         function stopVideo() {
@@ -223,70 +265,113 @@
         }
 
         function processFrame(source) {
+            const start = performance.now();
             const alphabet = charSetSelect.value;
             const res = parseInt(resInput.value);
-            const lh = parseFloat(lhInput.value);
-            const sw = source.videoWidth || source.width || 0;
-            const sh = source.videoHeight || source.height || 0;
-            if (!sw) return;
+            const lineHtScale = parseFloat(lhInput.value);
 
-            const w = res;
-            const h = Math.floor(res * (sh/sw) * lh);
-            if (hiddenCanvas.width !== w || hiddenCanvas.height !== h) {
-                hiddenCanvas.width = w; hiddenCanvas.height = h;
+            const sW = source.videoWidth || source.width || 0;
+            const sH = source.videoHeight || source.height || 0;
+            if (sW === 0 || sH === 0) return;
+
+            const width = res;
+            const height = Math.floor(res * (sH / sW) * lineHtScale);
+
+            if (hiddenCanvas.width !== width || hiddenCanvas.height !== height) {
+                hiddenCanvas.width = width;
+                hiddenCanvas.height = height;
+                cachedFontSize = 0;
             }
             
-            ctx.drawImage(source, 0, 0, w, h);
-            const data = ctx.getImageData(0, 0, w, h).data;
-            let out = "";
-            for (let y=0; y<h; y++) {
-                for (let x=0; x<w; x++) {
-                    const i = (y*w+x)*4;
-                    const b = (0.21*data[i] + 0.72*data[i+1] + 0.07*data[i+2])/255;
-                    out += alphabet[Math.floor(b*(alphabet.length-1))] || ' ';
+            ctx.drawImage(source, 0, 0, width, height);
+            const imageData = ctx.getImageData(0, 0, width, height);
+            const data = imageData.data;
+            const charLen = alphabet.length - 1;
+            
+            let asciiStr = "";
+            // Optimize: Use pre-calculated length and avoid excessive string concatenation overhead 
+            // by building rows then joining, though for small-ish grids += is fine.
+            for (let y = 0; y < height; y++) {
+                let row = "";
+                for (let x = 0; x < width; x++) {
+                    const i = (y * width + x) << 2;
+                    // Luma formula for grayscale
+                    const brightness = (0.2126 * data[i] + 0.7152 * data[i+1] + 0.0722 * data[i+2]) / 255;
+                    row += alphabet[(brightness * charLen) | 0];
                 }
-                out += "\n";
-            }
-            asciiOutput.textContent = out;
-            document.getElementById('dimensions').textContent = `Dimensions: ${w}x${h}`;
-            asciiOutput.style.fontSize = `${Math.max(2, 800/w)}px`;
-        }
-
-        function copy(text, msg) {
-            const t = document.createElement("textarea");
-            document.body.appendChild(t); t.value = text; t.select();
-            document.execCommand("copy"); document.body.removeChild(t);
-            const s = document.getElementById('status');
-            s.textContent = msg; s.classList.remove('hidden');
-            setTimeout(() => s.classList.add('hidden'), 2000);
-        }
-
-        document.getElementById('copyBtn').onclick = () => copy(asciiOutput.textContent, "ASCII Frame Copied!");
-
-        document.getElementById('exportHtmlBtn').onclick = () => {
-            let mediaUrl = "";
-            if (isVideoMode) {
-                mediaUrl = videoUrlInput.value;
-                if (!mediaUrl || mediaUrl.startsWith('blob:')) return alert("Please use a direct URL link for compressed sharing. Local files are too large for URL embedding.");
-            } else {
-                if (!originalImage || !originalImage.src.startsWith('data:')) return alert("Please upload an image first.");
-                mediaUrl = originalImage.src;
+                asciiStr += row + "\n";
             }
 
-            const safeA = charSetSelect.value.replace(/"/g, '&quot;');
-            // Minified embed engine to save characters
-            const html = `<!DOCTYPE html><html><body style="background:#000;color:#fff;margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;overflow:hidden"><pre id="o" style="font-family:monospace;line-height:${lhInput.value};font-size:${150/resInput.value}vw;white-space:pre"></pre>${isVideoMode?`<video id="m" src="${mediaUrl}" loop autoplay muted playsinline style="display:none"></video>`:`<img id="m" src="${mediaUrl}" style="display:none">`}<canvas id="c" style="display:none"></canvas><script>const m=document.getElementById('m'),o=document.getElementById('o'),c=document.getElementById('c'),ctx=c.getContext('2d'),a="${safeA}",r=${resInput.value},lh=${lhInput.value};function f(){const w=m.videoWidth||m.width,h=m.videoHeight||m.height;if(!w)return setTimeout(f,50);const rw=r,rh=Math.floor(r*(h/w)*lh);c.width=rw;c.height=rh;ctx.drawImage(m,0,0,rw,rh);const d=ctx.getImageData(0,0,rw,rh).data;let s="";for(let y=0;y<rh;y++){for(let x=0;x<rw;x++){const i=(y*rw+x)*4;const b=(0.21*d[i]+0.72*d[i+1]+0.07*d[i+2])/255;s+=a[Math.floor(b*(a.length-1))]||' '}s+='\\n'}o.textContent=s;${isVideoMode?'requestAnimationFrame(f)':''}}m.complete||m.readyState>0?f():(m.onload=f,m.onloadedmetadata=f)<\/script></body></html>`;
+            asciiOutput.textContent = asciiStr;
             
-            // Encode using base64 for better compatibility with data:text/html
-            const dataUrl = "data:text/html;base64," + btoa(unescape(encodeURIComponent(html)));
-            copy(dataUrl, "Compressed Live Embed Copied!");
+            if (cachedFontSize === 0) {
+                const containerWidth = document.getElementById('canvasContainer').offsetWidth - 64;
+                cachedFontSize = Math.max(1, Math.min(12, (containerWidth / width)));
+                asciiOutput.style.fontSize = `${cachedFontSize}px`;
+            }
+            
+            const elapsed = performance.now() - start;
+            document.getElementById('dimensions').textContent = `${width}x${height} CELLS`;
+            document.getElementById('perfCounter').textContent = `${Math.round(elapsed)}ms`;
+            
+            if (isVideoMode) {
+                const fps = Math.round(1000 / (performance.now() - lastFrameTime));
+                document.getElementById('fpsCounter').textContent = `${fps} FPS`;
+                lastFrameTime = performance.now();
+            } else {
+                document.getElementById('fpsCounter').textContent = "";
+            }
+        }
+
+        document.getElementById('shareLinkBtn').onclick = () => {
+            const status = document.getElementById('status');
+            status.textContent = "COMPRESSING...";
+            status.classList.remove('hidden');
+
+            const mediaSource = isVideoMode ? (videoUrlInput.value || currentFileBase64) : (imageUrlInput.value || currentFileBase64);
+            if (!mediaSource) { status.textContent = "NO MEDIA LOADED"; return; }
+
+            const config = {
+                v: isVideoMode ? 1 : 0,
+                r: resInput.value,
+                l: lhInput.value,
+                c: charSetSelect.selectedIndex,
+                src: Compressor.encode(mediaSource),
+                view: 1
+            };
+            
+            try {
+                const json = JSON.stringify(config);
+                const encoded = btoa(encodeURIComponent(json).replace(/%([0-9A-F]{2})/g, (match, p1) => String.fromCharCode('0x' + p1)));
+                const url = `${window.location.origin}${window.location.pathname}?data=${encoded}`;
+                
+                const dummy = document.createElement("textarea");
+                document.body.appendChild(dummy); dummy.value = url; dummy.select();
+                document.execCommand("copy");
+                document.body.removeChild(dummy);
+
+                status.textContent = "VIEWER LINK COPIED!";
+                setTimeout(() => status.classList.add('hidden'), 3000);
+            } catch (err) { status.textContent = "FILE TOO LARGE FOR URL"; }
         };
 
-        [resInput, lhInput, charSetSelect].forEach(i => i.oninput = () => {
-            resVal.textContent = resInput.value;
-            lhVal.textContent = lhInput.value;
-            if(!isVideoMode && originalImage) processFrame(originalImage);
-        });
+        window.onload = () => {
+            const data = new URLSearchParams(window.location.search).get('data');
+            if (!data) return;
+            try {
+                const decoded = decodeURIComponent(atob(data).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+                const config = JSON.parse(decoded);
+                if (config.view) document.body.classList.add('view-mode');
+                resInput.value = config.r;
+                lhInput.value = config.l;
+                charSetSelect.selectedIndex = config.c;
+                resValLabel.textContent = config.r;
+                lhValLabel.textContent = config.l;
+                const src = Compressor.decode(config.src);
+                if (config.v === 1) { isVideoMode = true; handleVideo(src); } 
+                else { isVideoMode = false; handleImage(src); }
+            } catch (e) { console.error("Load failed", e); }
+        };
     </script>
 </body>
 </html>
