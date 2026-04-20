@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pro ASCII Art & Video Engine</title>
+    <title>Pro ASCII Art & Video Engine (Form + Sheet Backend)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&display=swap');
@@ -25,20 +25,14 @@
             letter-spacing: 0px;
             display: inline-block;
             transform-origin: top left;
-            will-change: contents; /* GPU hint for frequent text updates */
+            will-change: contents;
         }
 
         .custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #1e293b; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
 
-        .is-playing {
-            box-shadow: 0 0 25px rgba(16, 185, 129, 0.2);
-            border-color: #10b981 !important;
-        }
-
-        /* View Mode specific styling */
-        body.view-mode { background-color: #000; }
+        body.view-mode { background-color: #000; overflow: hidden; }
         body.view-mode #main-ui { display: none; }
         body.view-mode #canvasContainer {
             width: 100vw;
@@ -49,40 +43,28 @@
     </style>
 </head>
 <body class="min-h-screen">
-    <!-- UI LAYOUT -->
     <div id="main-ui" class="p-4 md:p-8 max-w-7xl mx-auto">
         <header class="mb-8 text-center">
-            <h1 class="text-5xl font-black bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-emerald-400">
-                ASCII ULTRA ENGINE
+            <h1 class="text-5xl font-black bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-pink-400 to-red-400">
+                ASCII FORM ENGINE
             </h1>
-            <p class="text-slate-400 mt-2">Professional Grade Media-to-Text Transcoder</p>
+            <p class="text-slate-400 mt-2">Single-Packet Form Data Transmission</p>
         </header>
 
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
             <div class="lg:col-span-1 space-y-6 bg-slate-800/80 p-6 rounded-3xl border border-slate-700 backdrop-blur-xl shadow-xl">
-                
                 <div class="flex p-1 bg-slate-900 rounded-2xl">
-                    <button id="modeImage" class="flex-1 py-2 text-xs font-bold rounded-xl bg-blue-500 text-white transition-all">IMAGE</button>
+                    <button id="modeImage" class="flex-1 py-2 text-xs font-bold rounded-xl bg-purple-600 text-white transition-all">IMAGE</button>
                     <button id="modeVideo" class="flex-1 py-2 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition-all">VIDEO</button>
                 </div>
 
-                <div id="imageInputGroup" class="space-y-3">
-                    <label class="block text-sm font-semibold text-blue-300">Input Source</label>
-                    <input type="text" id="imageUrl" placeholder="Paste image URL..." class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white outline-none focus:ring-2 focus:ring-blue-500">
+                <div id="inputGroup" class="space-y-3">
+                    <input type="text" id="mediaUrl" placeholder="External URL..." class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white outline-none">
                     <div class="relative group">
-                        <input type="file" id="imageInput" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                        <input type="file" id="fileInput" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
                         <div class="bg-slate-700 group-hover:bg-slate-600 p-3 rounded-xl text-center text-xs font-bold transition-colors">UPLOAD FILE</div>
                     </div>
-                </div>
-
-                <div id="videoInputGroup" class="hidden space-y-3">
-                    <label class="block text-sm font-semibold text-emerald-300">Video Source</label>
-                    <input type="text" id="videoUrl" placeholder="Paste .mp4 link..." class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white outline-none">
-                    <div class="relative group">
-                        <input type="file" id="videoFileInput" accept="video/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
-                        <div class="bg-slate-700 group-hover:bg-slate-600 p-3 rounded-xl text-center text-xs font-bold">UPLOAD VIDEO</div>
-                    </div>
-                    <button id="playPauseBtn" class="w-full py-3 bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded-xl text-sm font-black transition-all">PLAY / PAUSE</button>
+                    <button id="playPauseBtn" class="hidden w-full py-3 bg-slate-900 border border-slate-700 rounded-xl text-sm font-black">PLAY / PAUSE</button>
                 </div>
 
                 <hr class="border-slate-700">
@@ -90,288 +72,252 @@
                 <div class="space-y-4">
                     <div>
                         <label class="flex justify-between text-sm font-bold mb-2">
-                            <span>Resolution (Width)</span>
-                            <span id="resVal" class="text-blue-400">120</span>
+                            <span>Resolution</span>
+                            <span id="resVal" class="text-purple-400">120</span>
                         </label>
-                        <input type="range" id="resolution" min="20" max="600" value="120" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500">
+                        <input type="range" id="resolution" min="20" max="400" value="120" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-purple-500">
                     </div>
-
                     <div>
                         <label class="flex justify-between text-sm font-bold mb-2">
-                            <span>Character Depth</span>
-                            <span id="lineHeightVal" class="text-blue-400">0.50</span>
+                            <span>Char Depth</span>
+                            <span id="lhVal" class="text-purple-400">0.50</span>
                         </label>
-                        <input type="range" id="lineHeight" min="0.2" max="1" step="0.01" value="0.50" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-purple-500">
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-bold mb-2">Visual Palette</label>
-                        <select id="charSet" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm">
-                            <option value=" .:-=+*#%@">Standard (Detailed)</option>
-                            <option value=" .-~=;*<?(]IV#%@╬">Extended Pro</option>
-                            <option value=" ░▒▓█">Block Gradients</option>
-                            <option value="01">Binary Matrix</option>
-                            <option value=" .">Minimal Dots</option>
-                        </select>
+                        <input type="range" id="lineHeight" min="0.2" max="1" step="0.01" value="0.50" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-pink-500">
                     </div>
                 </div>
 
                 <div class="pt-4 space-y-3">
-                    <button id="shareLinkBtn" class="w-full py-4 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 transition-all rounded-2xl font-black text-xs text-white shadow-lg">
-                        SHARE VIEWER-ONLY LINK
+                    <button id="shareLinkBtn" class="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 transition-all rounded-2xl font-black text-xs text-white shadow-lg">
+                        GENERATE SHORT LINK
                     </button>
-                    <div id="status" class="hidden text-center py-3 bg-slate-900 border border-slate-700 rounded-xl text-xs font-bold text-emerald-400 animate-pulse">
-                        LINK COPIED TO CLIPBOARD
-                    </div>
+                    <div id="status" class="hidden text-center py-3 bg-slate-900 border border-slate-700 rounded-xl text-xs font-bold text-purple-400"></div>
                 </div>
             </div>
 
             <div class="lg:col-span-3 flex flex-col gap-4">
-                <div id="canvasContainer" class="bg-black rounded-[2rem] border-4 border-slate-800 overflow-hidden shadow-2xl flex flex-col h-[75vh] relative group">
-                    <div class="absolute top-4 left-4 z-20 flex items-center gap-3">
-                        <span id="engineLabel" class="px-3 py-1 bg-blue-500/20 backdrop-blur-md rounded-full text-[10px] font-black uppercase tracking-widest text-blue-400 border border-blue-500/30">
-                            IMAGE ENGINE 2.0
-                        </span>
+                <div id="canvasContainer" class="bg-black rounded-[2rem] border-4 border-slate-800 overflow-hidden shadow-2xl flex flex-col h-[75vh] relative">
+                    <div class="absolute top-4 left-4 z-20">
+                        <span id="engineLabel" class="px-3 py-1 bg-purple-500/20 backdrop-blur-md rounded-full text-[10px] font-black uppercase tracking-widest text-purple-400 border border-purple-500/30">PACKET ENGINE</span>
                     </div>
                     <div class="flex-grow overflow-auto p-8 custom-scrollbar bg-black flex justify-center items-start">
-                        <div id="ascii-output">UPLOAD MEDIA TO BEGIN...</div>
+                        <div id="ascii-output">READY</div>
                     </div>
                 </div>
-                
                 <div class="flex items-center justify-between px-6 text-slate-500 text-xs font-mono uppercase tracking-widest">
-                    <div id="dimensions">Waiting for input</div>
-                    <div class="flex gap-4">
-                        <div id="perfCounter">Idle</div>
-                        <div id="fpsCounter" class="text-emerald-500"></div>
-                    </div>
+                    <div id="dimensions">Idle</div>
+                    <div id="perfCounter"></div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- BACKGROUND PROCESSORS -->
     <video id="hiddenVideo" class="hidden" loop muted crossorigin="anonymous" playsinline></video>
     <canvas id="hiddenCanvas" class="hidden"></canvas>
 
-    <script>
-        const Compressor = {
-            encode: (text) => {
-                const patterns = [['d_img', 'data:image/png;base64,'], ['d_jpg', 'data:image/jpeg;base64,'], ['d_vid', 'data:video/mp4;base64,'], ['v_url', 'https://'], ['c_set1', ' .:-=+*#%@'], ['c_set2', ' .-~=;*<?(]IV#%@╬']];
-                let res = text;
-                patterns.forEach(([k, v]) => res = res.split(v).join(`$${k}$`));
-                return res;
-            },
-            decode: (text) => {
-                const patterns = [['d_img', 'data:image/png;base64,'], ['d_jpg', 'data:image/jpeg;base64,'], ['d_vid', 'data:video/mp4;base64,'], ['v_url', 'https://'], ['c_set1', ' .:-=+*#%@'], ['c_set2', ' .-~=;*<?(]IV#%@╬']];
-                let res = text;
-                patterns.forEach(([k, v]) => res = res.split(`$${k}$`).join(v));
-                return res;
-            }
-        };
+    <script type="module">
+        const FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSeXmQJLhzY1OEiZUl3XAZFD_pyJhw9T4EumqPoF7NNgawmysA/formResponse";
+        const ENTRY_ID = "entry.1073679969";
+        const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1MctYRewEga7HPEHcAGnamu8U5Ww1h-46o0KDLzLAcAk/export?format=csv";
 
-        const imageInput = document.getElementById('imageInput');
-        const imageUrlInput = document.getElementById('imageUrl');
-        const videoFileInput = document.getElementById('videoFileInput');
-        const videoUrlInput = document.getElementById('videoUrl');
-        const resInput = document.getElementById('resolution');
-        const lhInput = document.getElementById('lineHeight');
-        const charSetSelect = document.getElementById('charSet');
-        const asciiOutput = document.getElementById('ascii-output');
-        const hiddenCanvas = document.getElementById('hiddenCanvas');
-        const hiddenVideo = document.getElementById('hiddenVideo');
-        const resValLabel = document.getElementById('resVal');
-        const lhValLabel = document.getElementById('lineHeightVal');
-        const ctx = hiddenCanvas.getContext('2d', { willReadFrequently: true, alpha: false });
+        const elements = {
+            res: document.getElementById('resolution'),
+            lh: document.getElementById('lineHeight'),
+            out: document.getElementById('ascii-output'),
+            hVid: document.getElementById('hiddenVideo'),
+            hCan: document.getElementById('hiddenCanvas'),
+            status: document.getElementById('status'),
+            share: document.getElementById('shareLinkBtn')
+        };
+        const ctx = elements.hCan.getContext('2d', { willReadFrequently: true, alpha: false });
         
         let originalImage = null;
         let isVideoMode = false;
-        let animationId = null;
         let currentFileBase64 = null;
-        let lastFrameTime = 0;
         let cachedFontSize = 0;
-
-        const updateUIAndProcess = () => {
-            resValLabel.textContent = resInput.value;
-            lhValLabel.textContent = lhInput.value;
-            cachedFontSize = 0; // Force recalculation
-            if (!isVideoMode && originalImage) processFrame(originalImage);
-        };
-
-        resInput.addEventListener('input', updateUIAndProcess);
-        lhInput.addEventListener('input', updateUIAndProcess);
-        charSetSelect.addEventListener('change', updateUIAndProcess);
-
-        document.getElementById('modeImage').onclick = () => {
-            isVideoMode = false; stopVideo();
-            document.getElementById('imageInputGroup').classList.remove('hidden');
-            document.getElementById('videoInputGroup').classList.add('hidden');
-            document.getElementById('engineLabel').textContent = "IMAGE ENGINE 2.0";
-            if(originalImage) processFrame(originalImage);
-        };
-        document.getElementById('modeVideo').onclick = () => {
-            isVideoMode = true;
-            document.getElementById('videoInputGroup').classList.remove('hidden');
-            document.getElementById('imageInputGroup').classList.add('hidden');
-            document.getElementById('engineLabel').textContent = "VIDEO ENGINE 2.0";
-        };
-
-        const handleImage = (src) => {
-            const img = new Image();
-            img.crossOrigin = "anonymous";
-            img.onload = () => { originalImage = img; processFrame(img); };
-            img.src = src;
-        };
-
-        const handleVideo = (src) => {
-            hiddenVideo.src = src;
-            hiddenVideo.load();
-            hiddenVideo.play().then(() => startVideoLoop());
-        };
-
-        imageUrlInput.onchange = () => { currentFileBase64 = null; handleImage(imageUrlInput.value); };
-        imageInput.onchange = (e) => {
-            const reader = new FileReader();
-            reader.onload = (ev) => { currentFileBase64 = ev.target.result; handleImage(ev.target.result); };
-            reader.readAsDataURL(e.target.files[0]);
-        };
-
-        videoUrlInput.onchange = () => { currentFileBase64 = null; handleVideo(videoUrlInput.value); };
-        videoFileInput.onchange = (e) => {
-            const reader = new FileReader();
-            reader.onload = (ev) => { currentFileBase64 = ev.target.result; handleVideo(ev.target.result); };
-            reader.readAsDataURL(e.target.files[0]);
-        };
-
-        document.getElementById('playPauseBtn').onclick = () => hiddenVideo.paused ? hiddenVideo.play() : hiddenVideo.pause();
-
-        function startVideoLoop() {
-            if (animationId) cancelAnimationFrame(animationId);
-            let lastVideoTime = -1;
-
-            const loop = (now) => {
-                // Optimization: Only process if the video has actually moved to a new frame
-                if (isVideoMode && !hiddenVideo.paused && hiddenVideo.currentTime !== lastVideoTime) {
-                    lastVideoTime = hiddenVideo.currentTime;
-                    processFrame(hiddenVideo);
-                }
-                animationId = requestAnimationFrame(loop);
-            };
-            animationId = requestAnimationFrame(loop);
-        }
-
-        function stopVideo() {
-            hiddenVideo.pause();
-            if (animationId) cancelAnimationFrame(animationId);
-        }
+        const alphabet = " .:-=+*#%@";
 
         function processFrame(source) {
             const start = performance.now();
-            const alphabet = charSetSelect.value;
-            const res = parseInt(resInput.value);
-            const lineHtScale = parseFloat(lhInput.value);
+            const res = parseInt(elements.res.value);
+            const lh = parseFloat(elements.lh.value);
+            const sW = source.videoWidth || source.width || 1;
+            const sH = source.videoHeight || source.height || 1;
 
-            const sW = source.videoWidth || source.width || 0;
-            const sH = source.videoHeight || source.height || 0;
-            if (sW === 0 || sH === 0) return;
+            const w = res;
+            const h = Math.floor(res * (sH / sW) * lh);
 
-            const width = res;
-            const height = Math.floor(res * (sH / sW) * lineHtScale);
-
-            if (hiddenCanvas.width !== width || hiddenCanvas.height !== height) {
-                hiddenCanvas.width = width;
-                hiddenCanvas.height = height;
+            if (elements.hCan.width !== w || elements.hCan.height !== h) {
+                elements.hCan.width = w; elements.hCan.height = h;
                 cachedFontSize = 0;
             }
             
-            ctx.drawImage(source, 0, 0, width, height);
-            const imageData = ctx.getImageData(0, 0, width, height);
-            const data = imageData.data;
-            const charLen = alphabet.length - 1;
-            
-            let asciiStr = "";
-            // Optimize: Use pre-calculated length and avoid excessive string concatenation overhead 
-            // by building rows then joining, though for small-ish grids += is fine.
-            for (let y = 0; y < height; y++) {
+            ctx.drawImage(source, 0, 0, w, h);
+            const { data } = ctx.getImageData(0, 0, w, h);
+            let ascii = "";
+            for (let y = 0; y < h; y++) {
                 let row = "";
-                for (let x = 0; x < width; x++) {
-                    const i = (y * width + x) << 2;
-                    // Luma formula for grayscale
-                    const brightness = (0.2126 * data[i] + 0.7152 * data[i+1] + 0.0722 * data[i+2]) / 255;
-                    row += alphabet[(brightness * charLen) | 0];
+                for (let x = 0; x < w; x++) {
+                    const i = (y * w + x) << 2;
+                    const b = (0.2126 * data[i] + 0.7152 * data[i+1] + 0.0722 * data[i+2]) / 255;
+                    row += alphabet[(b * (alphabet.length - 1)) | 0];
                 }
-                asciiStr += row + "\n";
+                ascii += row + "\n";
+            }
+            elements.out.textContent = ascii;
+
+            if (cachedFontSize === 0) {
+                const cw = document.getElementById('canvasContainer').offsetWidth - 64;
+                cachedFontSize = Math.max(0.5, Math.min(12, (cw / w)));
+                elements.out.style.fontSize = `${cachedFontSize}px`;
             }
 
-            asciiOutput.textContent = asciiStr;
-            
-            if (cachedFontSize === 0) {
-                const containerWidth = document.getElementById('canvasContainer').offsetWidth - 64;
-                cachedFontSize = Math.max(1, Math.min(12, (containerWidth / width)));
-                asciiOutput.style.fontSize = `${cachedFontSize}px`;
+            document.getElementById('dimensions').textContent = `${w}x${h}`;
+            document.getElementById('perfCounter').textContent = `${Math.round(performance.now() - start)}ms`;
+        }
+
+        const update = () => {
+            document.getElementById('resVal').textContent = elements.res.value;
+            document.getElementById('lhVal').textContent = elements.lh.value;
+            cachedFontSize = 0;
+            if (!isVideoMode && originalImage) processFrame(originalImage);
+        };
+        elements.res.oninput = update;
+        elements.lh.oninput = update;
+
+        document.getElementById('fileInput').onchange = (e) => {
+            const r = new FileReader();
+            r.onload = (ev) => {
+                currentFileBase64 = ev.target.result;
+                if (!isVideoMode) {
+                    const img = new Image();
+                    img.onload = () => { originalImage = img; processFrame(img); };
+                    img.src = ev.target.result;
+                } else {
+                    elements.hVid.src = ev.target.result;
+                    elements.hVid.play();
+                }
+            };
+            r.readAsDataURL(e.target.files[0]);
+        };
+
+        function videoLoop() {
+            if (isVideoMode && !elements.hVid.paused) processFrame(elements.hVid);
+            requestAnimationFrame(videoLoop);
+        }
+        videoLoop();
+
+        document.getElementById('modeImage').onclick = () => {
+            isVideoMode = false; elements.hVid.pause();
+            document.getElementById('playPauseBtn').classList.add('hidden');
+        };
+        document.getElementById('modeVideo').onclick = () => {
+            isVideoMode = true;
+            document.getElementById('playPauseBtn').classList.remove('hidden');
+        };
+
+        elements.share.onclick = async () => {
+            showStatus("PACKING DATA...", "text-purple-400");
+
+            const media = isVideoMode ? (document.getElementById('mediaUrl').value || currentFileBase64) : (document.getElementById('mediaUrl').value || currentFileBase64);
+            if (!media) { showStatus("NO MEDIA", "text-red-400"); return; }
+
+            // Everything is packed into one string for the single paragraph field
+            const packet = JSON.stringify({
+                v: isVideoMode ? 1 : 0,
+                r: elements.res.value,
+                l: elements.lh.value,
+                src: media
+            });
+
+            const formData = new URLSearchParams();
+            formData.append(ENTRY_ID, packet);
+
+            try {
+                // Submit via standard POST to Google Form
+                await fetch(FORM_URL, {
+                    method: "POST",
+                    mode: "no-cors",
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: formData.toString()
+                });
+
+                // Fetch current Sheet state to estimate ID
+                const resp = await fetch(SHEET_CSV_URL);
+                const csv = await resp.text();
+                const lines = csv.trim().split('\n');
+                const nextId = lines.length; // Row number as short ID
+
+                const url = `${window.location.origin}${window.location.pathname}?id=${nextId}`;
+                copyToClipboard(url);
+                showStatus(`LINK COPIED! (ID: ${nextId})`, "text-purple-400");
+            } catch (err) {
+                showStatus("SUBMISSION ERROR", "text-red-400");
+                console.error(err);
             }
-            
-            const elapsed = performance.now() - start;
-            document.getElementById('dimensions').textContent = `${width}x${height} CELLS`;
-            document.getElementById('perfCounter').textContent = `${Math.round(elapsed)}ms`;
-            
-            if (isVideoMode) {
-                const fps = Math.round(1000 / (performance.now() - lastFrameTime));
-                document.getElementById('fpsCounter').textContent = `${fps} FPS`;
-                lastFrameTime = performance.now();
-            } else {
-                document.getElementById('fpsCounter').textContent = "";
+        };
+
+        async function loadFromSheet(id) {
+            showStatus("FETCHING PACKET...", "text-purple-400");
+            try {
+                const response = await fetch(SHEET_CSV_URL);
+                const csv = await response.text();
+                // Simple CSV parsing that respects potential line breaks in data
+                const lines = csv.split(/\r?\n/);
+                
+                // Target the specific row (ID)
+                const targetLine = lines[id - 1]; 
+                if (!targetLine) throw new Error("ID Not Found");
+
+                // Everything after the first comma is our data packet
+                const firstComma = targetLine.indexOf(',');
+                let dataPart = targetLine.substring(firstComma + 1);
+                
+                // Clean up Google Sheets CSV escaping (quotes)
+                if (dataPart.startsWith('"') && dataPart.endsWith('"')) {
+                    dataPart = dataPart.substring(1, dataPart.length - 1);
+                }
+                dataPart = dataPart.replace(/""/g, '"');
+                
+                const cfg = JSON.parse(dataPart);
+
+                document.body.classList.add('view-mode');
+                elements.res.value = cfg.r;
+                elements.lh.value = cfg.l;
+                update();
+
+                if (cfg.v === 1) {
+                    isVideoMode = true; elements.hVid.src = cfg.src; elements.hVid.play();
+                } else {
+                    const img = new Image();
+                    img.onload = () => { originalImage = img; processFrame(img); };
+                    img.src = cfg.src;
+                }
+                elements.status.classList.add('hidden');
+            } catch (e) {
+                showStatus("LOAD FAILED: CHECK SHEET PUBLICITY", "text-red-400");
+                console.error("Parse Error:", e);
             }
         }
 
-        document.getElementById('shareLinkBtn').onclick = () => {
-            const status = document.getElementById('status');
-            status.textContent = "COMPRESSING...";
-            status.classList.remove('hidden');
-
-            const mediaSource = isVideoMode ? (videoUrlInput.value || currentFileBase64) : (imageUrlInput.value || currentFileBase64);
-            if (!mediaSource) { status.textContent = "NO MEDIA LOADED"; return; }
-
-            const config = {
-                v: isVideoMode ? 1 : 0,
-                r: resInput.value,
-                l: lhInput.value,
-                c: charSetSelect.selectedIndex,
-                src: Compressor.encode(mediaSource),
-                view: 1
-            };
-            
-            try {
-                const json = JSON.stringify(config);
-                const encoded = btoa(encodeURIComponent(json).replace(/%([0-9A-F]{2})/g, (match, p1) => String.fromCharCode('0x' + p1)));
-                const url = `${window.location.origin}${window.location.pathname}?data=${encoded}`;
-                
-                const dummy = document.createElement("textarea");
-                document.body.appendChild(dummy); dummy.value = url; dummy.select();
-                document.execCommand("copy");
-                document.body.removeChild(dummy);
-
-                status.textContent = "VIEWER LINK COPIED!";
-                setTimeout(() => status.classList.add('hidden'), 3000);
-            } catch (err) { status.textContent = "FILE TOO LARGE FOR URL"; }
-        };
-
         window.onload = () => {
-            const data = new URLSearchParams(window.location.search).get('data');
-            if (!data) return;
-            try {
-                const decoded = decodeURIComponent(atob(data).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
-                const config = JSON.parse(decoded);
-                if (config.view) document.body.classList.add('view-mode');
-                resInput.value = config.r;
-                lhInput.value = config.l;
-                charSetSelect.selectedIndex = config.c;
-                resValLabel.textContent = config.r;
-                lhValLabel.textContent = config.l;
-                const src = Compressor.decode(config.src);
-                if (config.v === 1) { isVideoMode = true; handleVideo(src); } 
-                else { isVideoMode = false; handleImage(src); }
-            } catch (e) { console.error("Load failed", e); }
+            const params = new URLSearchParams(window.location.search);
+            const id = params.get('id');
+            if (id) {
+                loadFromSheet(parseInt(id));
+            }
         };
+
+        function showStatus(msg, color) {
+            elements.status.textContent = msg;
+            elements.status.className = `text-center py-3 bg-slate-900 border border-slate-700 rounded-xl text-xs font-bold ${color}`;
+            elements.status.classList.remove('hidden');
+        }
+
+        function copyToClipboard(text) {
+            const el = document.createElement('textarea');
+            el.value = text; document.body.appendChild(el); el.select();
+            document.execCommand('copy'); document.body.removeChild(el);
+        }
     </script>
 </body>
 </html>
