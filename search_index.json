@@ -1,1 +1,24 @@
 
+[
+    {
+        "title": "Python Programming Language",
+        "url": "https://www.python.org/",
+        "snippet": "Python is a high-level, general-purpose programming language. Its design philosophy emphasizes code readability with the use of significant indentation.",
+        "content": "python is a high-level general-purpose programming language its design philosophy emphasizes code readability with the use of significant indentation python is dynamically-typed and garbage-collected",
+        "last_updated": "2024-05-20T12:00:00Z"
+    },
+    {
+        "title": "GitHub Actions Documentation",
+        "url": "https://docs.github.com/en/actions",
+        "snippet": "Automate, customize, and execute your software development workflows right in your repository with GitHub Actions.",
+        "content": "automate customize and execute your software development workflows right in your repository with github actions you can discover create and share actions to perform any job you want",
+        "last_updated": "2024-05-20T12:05:00Z"
+    },
+    {
+        "title": "MDN Web Docs - HTML",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/HTML",
+        "snippet": "HTML (HyperText Markup Language) is the most basic building block of the Web. It defines the meaning and structure of web content.",
+        "content": "html hypertext markup language is the most basic building block of the web it defines the meaning and structure of web content other technologies besides html are generally used to describe a web page appearance",
+        "last_updated": "2024-05-20T12:10:00Z"
+    }
+]
